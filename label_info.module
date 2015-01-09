@@ -258,16 +258,6 @@ function label_info_preprocess_panels_pane(&$variables) {
     if (!empty($variables['content']['#label_info'])) {
       $label_info = $variables['content']['#label_info'];
     }
-    // For normal field facets we fetch the label info from field configuration
-    else {
-      // Get field name (for some fields we have field_name:attribute)
-      list($field_name) = explode(':', $variables['content']['#facet']['name']);
-      // Get field configuration to check for label info
-      $field_config = field_info_field($field_name);
-      if (!empty($field_config['label_info'])) {
-        $label_info = $field_config['label_info'];
-      }
-    }
 
     // If we have a label info, display it
     if (!empty($label_info)) {
