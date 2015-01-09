@@ -219,7 +219,6 @@ function label_info_panels_pane_content_alter($content, $pane, $args, $context, 
 function label_info_preprocess_field(&$variables) {
   if (isset($variables['element']['#label_info'])) {
     $variables['label'] .=
-      '&nbsp;' .
       _label_info_html_code($variables['element']['#label_info'],
         $variables['element']['#field_name']);
   }
@@ -298,7 +297,7 @@ function _label_info_html_code($label_info, $field = '') {
   // Parse the tokens
   $label_info = token_replace($label_info);
 
-  return theme('qtip', array(
+  return '&nbsp;' . theme('qtip', array(
     'instance' => 'label_info',
     'content'  =>'ⓘ',
     'tooltip'  => $label_info,
