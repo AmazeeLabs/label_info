@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- *   Label Info module file
+ * Label Info module file
  */
 
 /**
@@ -16,33 +16,30 @@ function label_info_form_alter(&$form, &$form_state, $form_id) {
       '#title' => $field_title,
       '#description' => $field_description,
       '#weight' => -4,
-      '#default_value' => isset($form['#field']['label_info'])
-                            ? $form['#field']['label_info'] : '',
+      '#default_value' => isset($form['#field']['label_info']) ? $form['#field']['label_info'] : '',
       '#suffix' =>  theme('token_tree', array(), TRUE, TRUE),
     );
   }
-  else {
-    if ($form_id == 'facetapi_facet_display_form') {
-      $var_name = _label_info_get_variable_name(
-                    $form['#facetapi']['facet']['map options']['index id'],
-                    $form['#facetapi']['facet']['name']
-                  );
+  elseif ($form_id == 'facetapi_facet_display_form') {
+    $var_name = _label_info_get_variable_name(
+      $form['#facetapi']['facet']['map options']['index id'],
+      $form['#facetapi']['facet']['name']
+    );
 
-      $form['global']['label_info'] = array(
-        '#type' => 'textarea',
-        '#title' => $field_title,
-        '#description' => $field_description,
-        '#default_value' => variable_get($var_name, ''),
-        '#suffix' =>  theme('token_tree', array(), TRUE, TRUE),
-      );
+    $form['global']['label_info'] = array(
+      '#type' => 'textarea',
+      '#title' => $field_title,
+      '#description' => $field_description,
+      '#default_value' => variable_get($var_name, ''),
+      '#suffix' =>  theme('token_tree', array(), TRUE, TRUE),
+    );
 
-      // Add our submit handler first, otherwise all values from global are gone
-      // after they get processed by facetapi
-      $form['#submit'] = array_merge(
-        array('_label_info_facetapi_facet_display_form_submit'),
-        $form['#submit']
-      );
-    }
+    // Add our submit handler first, otherwise all values from global are gone
+    // after they get processed by facetapi
+    $form['#submit'] = array_merge(
+      array('_label_info_facetapi_facet_display_form_submit'),
+      $form['#submit']
+    );
   }
 }
 
@@ -86,17 +83,14 @@ function _label_info_get_variable_name($searcher, $name) {
  *
  * Used to pass label info to template preprocess via $items array.
  */
-function label_info_field_formatter_view($entity_type, $entity, $field, $instance,
-                                                  $langcode, $items, $display)
-{
+function label_info_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   // Renderable array to return
   $element = array();
 
   // Keep the default behavior
   $default_formatter = $display['legacy_module'] . '_field_formatter_view';
   if (function_exists($default_formatter)) {
-    $element = $default_formatter($entity_type, $entity, $field, $instance,
-                                  $langcode, $items, $display);
+    $element = $default_formatter($entity_type, $entity, $field, $instance, $langcode, $items, $display);
   }
 
   // Add label info into items to make it available in hook_preprocess_field()
@@ -133,8 +127,8 @@ function label_info_panels_pane_content_alter($content, $pane, $args, $context, 
   }
   elseif (isset($content->content['#facet']['map options']) && !empty($content->content['#facet']['map options']['index id'])) {
     $var_name = _label_info_get_variable_name(
-                  $content->content['#facet']['map options']['index id'],
-                  $content->content['#facet']['field']);
+      $content->content['#facet']['map options']['index id'],
+      $content->content['#facet']['field']);
     $label_info = variable_get($var_name, '');
     if (!empty($label_info)) {
       // Not a very nice approach, but not so many possibilities here.
@@ -150,9 +144,9 @@ function label_info_panels_pane_content_alter($content, $pane, $args, $context, 
 function label_info_preprocess_field(&$variables) {
   if (isset($variables['element']['#label_info'])) {
     $variables['label'] .=
-     ':&nbsp;' . // This is added by code and removed from sitebuilding
+      ':&nbsp;' . // This is added by code and removed from sitebuilding
       _label_info_html_code($variables['element']['#label_info'],
-                            $variables['element']['#field_name']);
+        $variables['element']['#field_name']);
   }
 }
 
@@ -181,9 +175,7 @@ function label_info_views_pre_render(&$view) {
  * Implements hook_preprocess_HOOK() for panels_pane().
  */
 function label_info_preprocess_panels_pane(&$variables) {
-  if (isset($variables['pane']->subtype)
-     && substr($variables['pane']->subtype, 0, 9) == 'facetapi-')
-  {
+  if (isset($variables['pane']->subtype) && substr($variables['pane']->subtype, 0, 9) == 'facetapi-') {
     $label_info = '';
     $field_name = '';
 
@@ -247,9 +239,7 @@ function _label_info_html_code($label_info, $field = '') {
     );
   }
 
-  return ' <a href="#"'
-          . ' class="label-info"'
-          . ' data-label-info="'. check_plain($field) . '">ⓘ</a>';
+  return ' <a href="#" class="label-info" data-label-info="'. check_plain($field) . '">ⓘ</a>';
 }
 
 /**
