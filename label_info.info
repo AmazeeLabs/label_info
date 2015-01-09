@@ -2,3 +2,5 @@ name = Label Info
 description = Display an information (i) link along field labels (tooltip)
 package = Custom
 core = 7.x
+
+dependencies[] = qtip

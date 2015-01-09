@@ -5,6 +5,81 @@
  */
 
 /**
+ * Implements hook_ctools_plugin_api().
+ */
+function label_info_ctools_plugin_api($module, $api) {
+  if ($module == 'qtip' && $api == 'qtip_default') {
+    return array('version' => '1');
+  }
+}
+
+/**
+ * Implements hook_qtip_default_qtips().
+ */
+function label_info_qtip_default_qtips() {
+  $qtips = array();
+
+  $qtip = new stdClass();
+  $qtip->disabled = FALSE; /* Edit this to true to make a default qtip disabled initially */
+  $qtip->api_version = 1.0;
+  $qtip->machine_name = 'label_info';
+  $qtip->name = 'Label info';
+  $qtip->settings = array(
+    'content' => array(
+      'button' => 0,
+    ),
+    'style' => array(
+      'tip' => array(
+        'width' => '6',
+        'height' => '6',
+        'border' => '',
+        'corner_position' => '',
+        'mimic' => '',
+        'offset' => '',
+        'corner' => 1,
+      ),
+      'classes' => 'qtip-dark',
+      'classes_custom' => '',
+      'shadow' => 'qtip-shadow',
+      'rounded_corners' => 0,
+    ),
+    'position' => array(
+      'at' => 'top center',
+      'my' => '',
+      'viewport' => 0,
+      'adjust' => array(
+        'method' => '',
+      ),
+    ),
+    'show' => array(
+      'event' => array(
+        'mouseenter' => 'mouseenter',
+        'focus' => 0,
+        'click' => 0,
+      ),
+      'solo' => 0,
+      'ready' => 0,
+    ),
+    'hide' => array(
+      'event' => array(
+        'unfocus' => 'unfocus',
+        'mouseleave' => 0,
+        'blur' => 0,
+        'click' => 0,
+      ),
+      'fixed' => 1,
+      'inactive' => '1000',
+    ),
+    'miscellaneous' => array(
+      'button_title_text' => '',
+    ),
+  );
+  $qtips['label_info'] = $qtip;
+
+  return $qtips;
+}
+
+/**
  * Implements hook_form_alter().
  */
 function label_info_form_alter(&$form, &$form_state, $form_id) {
@@ -219,27 +294,15 @@ function label_info_preprocess_panels_pane(&$variables) {
  *   HTML code to apend to label
  */
 function _label_info_html_code($label_info, $field = '') {
-  if (empty($field)) {
-    $field = 'field_' . md5($label_info); // Hopefully this will never happen
-  }
 
   // Parse the tokens
   $label_info = token_replace($label_info);
 
-  // Add the label info only once per field/identifier
-  static $js_added = array();
-  if (empty($js_added[$field])) {
-    drupal_add_js(
-      array(
-        'label_info' => array(
-          $field => $label_info,
-        )
-      ),
-      'setting'
-    );
-  }
-
-  return ' <a href="#" class="label-info" data-label-info="'. check_plain($field) . '">ⓘ</a>';
+  return theme('qtip', array(
+    'instance' => 'label_info',
+    'content'  =>'ⓘ',
+    'tooltip'  => $label_info,
+  ));
 }
 
 /**
