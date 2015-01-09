@@ -1,0 +1,267 @@
+<?php
+/**
+ * @file
+ *   Label Info module file
+ */
+
+/**
+ * Implements hook_form_alter().
+ */
+function label_info_form_alter(&$form, &$form_state, $form_id) {
+  $field_title = t('Label info (visitors)');
+  $field_description = t('Text that should be display in a tooltip when user clicks ⓘ button');
+  if ($form_id == 'field_ui_field_edit_form') {
+    $form['field']['label_info'] = array(
+      '#type' => 'textarea',
+      '#title' => $field_title,
+      '#description' => $field_description,
+      '#weight' => -4,
+      '#default_value' => isset($form['#field']['label_info'])
+                            ? $form['#field']['label_info'] : '',
+      '#suffix' =>  theme('token_tree', array(), TRUE, TRUE),
+    );
+  }
+  else {
+    if ($form_id == 'facetapi_facet_display_form') {
+      $var_name = _label_info_get_variable_name(
+                    $form['#facetapi']['facet']['map options']['index id'],
+                    $form['#facetapi']['facet']['name']
+                  );
+
+      $form['global']['label_info'] = array(
+        '#type' => 'textarea',
+        '#title' => $field_title,
+        '#description' => $field_description,
+        '#default_value' => variable_get($var_name, ''),
+        '#suffix' =>  theme('token_tree', array(), TRUE, TRUE),
+      );
+
+      // Add our submit handler first, otherwise all values from global are gone
+      // after they get processed by facetapi
+      $form['#submit'] = array_merge(
+        array('_label_info_facetapi_facet_display_form_submit'),
+        $form['#submit']
+      );
+    }
+  }
+}
+
+
+/**
+ * Save label info information for facets that don't have field config
+ * (e.g. node properties)
+ */
+function _label_info_facetapi_facet_display_form_submit(&$form, &$form_state) {
+  $var_name = _label_info_get_variable_name(
+    $form['#facetapi']['facet']['map options']['index id'],
+    $form['#facetapi']['facet']['name']
+  );
+
+  if (empty($form_state['values']['global']['label_info'])) {
+    variable_del($var_name);
+  }
+  else {
+    variable_set($var_name, $form_state['values']['global']['label_info']);
+  }
+}
+
+
+/**
+ * Get variable name use to store label infor for a custom facet
+ *
+ * @param string $searcher
+ *   Searcher identifier (or search_api index_id)
+ * @param string $name
+ *   Field/property name
+ *
+ * @return string
+ *   Variable name
+ */
+function _label_info_get_variable_name($searcher, $name) {
+  return "label_info:{$searcher}:{$name}";
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ *
+ * Used to pass label info to template preprocess via $items array.
+ */
+function label_info_field_formatter_view($entity_type, $entity, $field, $instance,
+                                                  $langcode, $items, $display)
+{
+  // Renderable array to return
+  $element = array();
+
+  // Keep the default behavior
+  $default_formatter = $display['legacy_module'] . '_field_formatter_view';
+  if (function_exists($default_formatter)) {
+    $element = $default_formatter($entity_type, $entity, $field, $instance,
+                                  $langcode, $items, $display);
+  }
+
+  // Add label info into items to make it available in hook_preprocess_field()
+  $element['#label_info'] = $field['label_info'];
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_display_ENTITY_TYPE_alter().
+ *
+ * We need to alter the module, otherwise oue custom hook_field_formatter_view()
+ * will not be called. Save the original module so we can keep the original
+ * behavior for that field.
+ *
+ * This only works when node_view() is called. For panels see hook_panels_pane_content_alter().
+ */
+function label_info_field_display_node_alter(&$display, $context) {
+  /*if (!empty($context['field']['label_info'])) {
+    $display['legacy_module'] = isset($display['module']) ? $display['module'] : NULL;
+    $display['module'] = 'label_info';
+  }*/
+}
+
+/**
+ *  Implements hook_panels_pane_content_alter().
+ */
+function label_info_panels_pane_content_alter($content, $pane, $args, $context, $panel, $display) {
+  if (isset($content->content['#field_name'])) {
+    $field_config = field_info_field($content->content['#field_name']);
+    if (!empty($field_config['label_info'])) {
+      $content->content['#label_info'] = $field_config['label_info'];
+    }
+  }
+  elseif (isset($content->content['#facet']['map options']) && !empty($content->content['#facet']['map options']['index id'])) {
+    $var_name = _label_info_get_variable_name(
+                  $content->content['#facet']['map options']['index id'],
+                  $content->content['#facet']['field']);
+    $label_info = variable_get($var_name, '');
+    if (!empty($label_info)) {
+      // Not a very nice approach, but not so many possibilities here.
+      // One option would be to use i18n variables.
+      $content->content['#label_info'] = t($label_info);
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for theme_field().
+ */
+function label_info_preprocess_field(&$variables) {
+  if (isset($variables['element']['#label_info'])) {
+    $variables['label'] .=
+     ':&nbsp;' . // This is added by code and removed from sitebuilding
+      _label_info_html_code($variables['element']['#label_info'],
+                            $variables['element']['#field_name']);
+  }
+}
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function label_info_views_pre_render(&$view) {
+  if ($view->style_plugin instanceof views_data_export_plugin_style_export) {
+    return;
+  }
+
+  if (isset($view->query->pager->display->handler->handlers['field'])) {
+    $field_handlers = &$view->query->pager->display->handler->handlers['field'];
+    foreach($field_handlers as $field_key => $field_handler) {
+      if (!empty($field_handler->field_info['label_info'])) {
+        $field_handlers[$field_key]->options['label'] .=
+          _label_info_html_code($field_handler->field_info['label_info'], $field_key);
+        $view->has_label_info = TRUE; // This will tell preprocess hook
+                                      // that we have some HTML inside labels
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for panels_pane().
+ */
+function label_info_preprocess_panels_pane(&$variables) {
+  if (isset($variables['pane']->subtype)
+     && substr($variables['pane']->subtype, 0, 9) == 'facetapi-')
+  {
+    $label_info = '';
+    $field_name = '';
+
+    // For properties we have label_info already available (was set in
+    // in function label_info_panels_pane_content_alter())
+    if (!empty($variables['content']['#label_info'])) {
+      $label_info = $variables['content']['#label_info'];
+    }
+    // For normal field facets we fetch the label info from field configuration
+    else {
+      // Get field name (for some fields we have field_name:attribute)
+      list($field_name) = explode(':', $variables['content']['#facet']['name']);
+      // Get field configuration to check for label info
+      $field_config = field_info_field($field_name);
+      if (!empty($field_config['label_info'])) {
+        $label_info = $field_config['label_info'];
+      }
+    }
+
+    // If we have a label info, display it
+    if (!empty($label_info)) {
+      $i_code = _label_info_html_code($label_info, $field_name);
+      if (strpos($variables['title'], $i_code) === FALSE) { // In case block title was not overwritten
+        $variables['title'] .= $i_code;
+      }
+    }
+  }
+}
+
+/**
+ * A pseudo theme function used to generate the link
+ *
+ * This function also applies token_replace over the text.
+ *
+ * @param string $text
+ *   Info label text
+ * @param string $field
+ *   Field name to use as identifier. If missing, a hash will be generated
+ *
+ * @return string
+ *   HTML code to apend to label
+ */
+function _label_info_html_code($label_info, $field = '') {
+  if (empty($field)) {
+    $field = 'field_' . md5($label_info); // Hopefully this will never happen
+  }
+
+  // Parse the tokens
+  $label_info = token_replace($label_info);
+
+  // Add the label info only once per field/identifier
+  static $js_added = array();
+  if (empty($js_added[$field])) {
+    drupal_add_js(
+      array(
+        'label_info' => array(
+          $field => $label_info,
+        )
+      ),
+      'setting'
+    );
+  }
+
+  return ' <a href="#"'
+          . ' class="label-info"'
+          . ' data-label-info="'. check_plain($field) . '">ⓘ</a>';
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for views_view_table().
+ */
+function label_info_preprocess_views_view_table(&$variables) {
+  if (isset($variables['view']->has_label_info)) {
+    // Allow HTML in field labels.
+    foreach ($variables['view']->field as $key => $field_handler) {
+      if (isset($variables['header'][$key])) {
+        $variables['header'][$key] = $field_handler->label();
+      }
+    }
+  }
+}
