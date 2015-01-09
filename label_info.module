@@ -219,7 +219,7 @@ function label_info_panels_pane_content_alter($content, $pane, $args, $context, 
 function label_info_preprocess_field(&$variables) {
   if (isset($variables['element']['#label_info'])) {
     $variables['label'] .=
-      ':&nbsp;' . // This is added by code and removed from sitebuilding
+      '&nbsp;' .
       _label_info_html_code($variables['element']['#label_info'],
         $variables['element']['#field_name']);
   }
