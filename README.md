@@ -7,3 +7,5 @@ Tooltip is provided by the [qTip](https://www.drupal.org/project/qtip) module. I
 For the entity view displays, the field info-message is configured at the field edit form.
 
 For the facet filtes, the field info-message is configured at the facet display settings form.
+
+_Initially written by [Luxian](https://github.com/Luxian) for [FischerConnectors](http://www.fischerconnectors.com/)._
