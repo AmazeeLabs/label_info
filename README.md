@@ -9,3 +9,7 @@ For the entity view displays, the field info-message is configured at the field 
 For the facet filtes, the field info-message is configured at the facet display settings form.
 
 _Initially written by [Luxian](https://github.com/Luxian) for [FischerConnectors](http://www.fischerconnectors.com/)._
+
+## Todo
+
+1. Find a better way for info translation (i18n?)
