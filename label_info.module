@@ -285,7 +285,7 @@ function label_info_preprocess_panels_pane(&$variables) {
 function _label_info_html_code($label_info, $field = '') {
 
   // Parse the tokens
-  $label_info = token_replace($label_info);
+  $label_info = token_replace(t($label_info));
 
   return '&nbsp;' . theme('qtip', array(
     'instance' => 'label_info',
