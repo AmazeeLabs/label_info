@@ -289,7 +289,7 @@ function _label_info_html_code($label_info, $field = '') {
 
   return '&nbsp;' . theme('qtip', array(
     'instance' => 'label_info',
-    'content'  =>'ⓘ',
+    'content'  =>'<span class="tooltip-icon">i</span>',
     'tooltip'  => $label_info,
   ));
 }
